@@ -23,7 +23,9 @@ jobs:
           pip install -r requirements.txt
       - name: Create Service Account Key File
         run: |
-          echo "${{ secrets.GCP_SERVICE_ACCOUNT }}" > service_account.json
+          cat <<EOF > service_account.json
+          ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          EOF
       - name: Run Alert System
         env:
           GCP_SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
