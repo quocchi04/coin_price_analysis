@@ -3,7 +3,17 @@ import pandas as pd
 import json
 import os
 import plotly.express as px
-
+# ĐOẠN MỒI: Tự động tạo file json từ Secrets của Streamlit
+if "GCP_SERVICE_ACCOUNT" in st.secrets:
+    secret_data = st.secrets["GCP_SERVICE_ACCOUNT"]
+    # Nếu secret là chuỗi (string), ta chuyển nó về dict
+    if isinstance(secret_data, str):
+        secret_dict = json.loads(secret_data)
+    else:
+        secret_dict = dict(secret_data)
+        
+    with open("service_account.json", "w") as f:
+        json.dump(secret_dict, f)
 # Import các hàm xử lý GCS thay vì file local
 from src.untils.drive import get_data
 from src.Prediction.coin_prediction import show as run_prediction
