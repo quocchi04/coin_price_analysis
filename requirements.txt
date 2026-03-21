@@ -1,22 +1,30 @@
+# Cơ bản & Giao diện
 streamlit
 pandas
 numpy
 matplotlib
 seaborn
+plotly>=5.10
+streamlit-aggrid==0.3.5
+requests>=2.28.0
+
+# Học máy & Dự báo
 scikit-learn==1.3.2
 xgboost==2.0.3
 scipy
 tslearn
 joblib==1.3.2
 loky==3.4.0
-plotly>=5.10
-streamlit-aggrid==0.3.5
-requests>=2.28.0
 
-# Google Cloud
+# Google Cloud (Quan trọng để kết nối Drive/GCS)
 google-api-python-client
+google-auth-httplib2
+google-auth-oauthlib
+google-cloud-storage
 google-cloud-bigquery
 google-cloud-bigquery-storage
-google-cloud-storage
 db-dtypes
-pyarrow 
+pyarrow
+
+# Tiện ích hệ thống (Để fix cái lỗi ModuleNotFoundError: dotenv)
+python-dotenv
