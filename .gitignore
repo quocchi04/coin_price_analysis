@@ -1,0 +1,17 @@
+# Chặn file chứa mật khẩu
+.env
+
+# Chặn file cấu hình Google Drive
+service_account.json
+
+# Chặn các thư mục rác của Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# Chặn dữ liệu tạm (nếu bạn không muốn đẩy file CSV nặng lên)
+*.csv
+
+# Chặn các file tạm của VS Code
+.vscode/

@@ -1,0 +1,13 @@
+[
+    {
+        "mail": "quocchi2708ax@gmail.com",
+        "coins": [
+            {
+                "bitcoin": {
+                    "breakout": 60000.0,
+                    "breakdown": 50000.0
+                }
+            }
+        ]
+    }
+]
