@@ -45,7 +45,7 @@ def plot_scatter(analysis_df, is_streamlit=False):
     sns.regplot(x='market_cap', y='total_volume', data=analysis_df, scatter_kws={'alpha':0.5})
     plt.xscale('log')
     plt.yscale('log')
-    plt.title('Moi lien he giua Von hoa va Khoi luong giao dich (Log Scale)')
+    plt.title('Mối liên hệ giữa Vốn hóa và Khối lượng giao dịch (Log Scale)')
     
     if is_streamlit:
         import streamlit as st
@@ -61,17 +61,17 @@ def show(df):
     if df is not None and not df.empty:
         corr_matrix, analysis_df = calculate_correlation(df)
         
-        st.write("#### 1. Ma tran tuong quan (Heatmap)")
+        st.write("#### 1. Ma trận tương quan (Heatmap)")
         plot_heatmap(corr_matrix, is_streamlit=True)
         
-        st.write("#### 2. Tuong quan Von hoa & Khoi luong (Scatter Plot)")
+        st.write("#### 2. Tương quan ốn hóa & Khối lượng (Scatter Plot)")
         plot_scatter(analysis_df, is_streamlit=True)
         
-        with st.expander("Giai thich chi so tuong quan"):
+        with st.expander("Giải thích chỉ số tương quan"):
             st.write("""
-            - **1.0**: Tuong quan thuan hoan hao.
-            - **0.0**: Khong co moi lien he tuyen tinh.
-            - **-1.0**: Tuong quan nghich hoan hao.
+            - **1.0**: Tương quan thuận hoàn hảo.
+            - **0.0**: Không có mối liên hệ tuyến tính.
+            - **-1.0**: Tương quan nghịch hoàn hảo.
             """)
     else:
         st.error("Khong co du lieu de phan tich.")
@@ -85,7 +85,7 @@ if __name__ == "__main__":
     else:
         df_raw = pd.read_csv(DATA_FILE)
         corr, analysis = calculate_correlation(df_raw)
-        print("\nMA TRAN TUONG QUAN:")
+        print("\nMA TRẬN TƯƠNG QUAN:")
         print(corr.round(3))
         plot_heatmap(corr, is_streamlit=False)
         plot_scatter(analysis, is_streamlit=False)

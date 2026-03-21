@@ -67,7 +67,7 @@ def show(df):
         plot_supply_chart(df_supply, is_streamlit=True)
         
         # In danh sach rui ro
-        st.subheader("Top 10 Coin co rui ro lam phat cao (Cung thap)")
+        st.subheader("Top 10 Coin có rủi ro lạm phát cao (Cung thấp)")
         top_low = df_supply[['symbol', 'name', 'supply_ratio']].sort_values('supply_ratio').head(10).copy()
         top_low['supply_ratio'] = top_low['supply_ratio'].apply(lambda x: f"{x:.2%}")
         st.table(top_low)

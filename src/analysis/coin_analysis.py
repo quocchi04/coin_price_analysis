@@ -75,7 +75,7 @@ def show(df):
         plot_market_analysis(df_latest, is_streamlit=True)
         
         # Hien thi bang du lieu duoi bieu do
-        st.write("Danh sach chi tiet:")
+        st.write("Danh sách chi tiết:")
         st.dataframe(df_latest[['name', 'symbol', 'price_change_24h', 'total_volume']].nlargest(10, 'price_change_24h'))
     else:
         st.error("Khong co du lieu de hien thi.")

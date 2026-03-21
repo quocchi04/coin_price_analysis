@@ -77,9 +77,9 @@ def plot_pattern_comparison(coin_id, matches, current_segment, is_streamlit=Fals
         plt.plot(m['past_segment'][:, 0], linestyle='--', 
                  label=f"Mau {i+1} (DTW={m['distance']:.2f}, Sau do: {m['future_direction']})")
 
-    plt.title(f"Phan tich hinh thai gia (DTW Matching): {coin_id}", fontsize=14, fontweight='bold')
-    plt.xlabel("Buoc thoi gian")
-    plt.ylabel("Gia chuan hoa (0-1)")
+    plt.title(f"Phân tích hình thái giá (DTW Matching): {coin_id}", fontsize=14, fontweight='bold')
+    plt.xlabel("Buộc thời gian")
+    plt.ylabel("Giá chuẩn hóa (0-1)")
     plt.legend()
     plt.grid(True, alpha=0.3)
     
@@ -98,19 +98,19 @@ def show(df):
     try:
         from tslearn.metrics import dtw
     except ImportError:
-        st.error("Thieu thu vien 'tslearn'. Hay cai dat bang lenh: pip install tslearn")
+        st.error("Thiếu thư viện 'tslearn'. Hay cài đặt bằng lệnh: pip install tslearn")
         return
 
     # Chon coin de soi mau hinh
     coins = df['id'].unique()
-    selected_coin = st.selectbox("Chon Coin de phan tich hinh thai:", coins)
+    selected_coin = st.selectbox("Chọn Coin để phân tích hình thái:", coins)
     
-    w_size = st.slider("Do dai cua mau (Window Size):", 3, 10, 3)
+    w_size = st.slider("Đ dài của mẫu (Window Size):", 3, 10, 3)
     
     results, current_seg = find_similar_patterns(df, selected_coin, window_size=w_size)
     
     if results and current_seg is not None:
-        st.info(f"Tim thay {len(results)} doan trong qua khu co hinh thai gia giong voi hien tai.")
+        st.info(f"Tìm thay {len(results)} đoạn trong quá khứ có hình thái giá giống với hiện tại.")
         
         # Ve bieu do so sanh
         plot_pattern_analysis = plot_pattern_comparison(selected_coin, results, current_seg, is_streamlit=True)

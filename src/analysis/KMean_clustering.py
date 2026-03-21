@@ -84,7 +84,7 @@ def show(df):
     st.write("### Gom cụm K-Means (K-Means Clustering Analysis)")
     
     # Sidebar hoac Slider de chon so cum ngay tren App
-    n_clusters = st.slider("Chon so luong cum (K):", min_value=2, max_value=10, value=4)
+    n_clusters = st.slider("Chọn số lượng cụm (K):", min_value=2, max_value=10, value=4)
     
     latest_time = df["time_collected"].max()
     df_latest = df[df["time_collected"] == latest_time].copy()
@@ -96,7 +96,7 @@ def show(df):
     plot_kmeans_clusters(df_clustered, is_streamlit=True)
     
     # Thong ke so luong
-    st.write("Thong ke so luong coin moi cum:")
+    st.write("Thống kê số lượng coin mỗi cụm:")
     st.bar_chart(df_clustered['cluster'].value_counts().sort_index())
 
 # --- CHAY RIENG (TERMINAL) ---
@@ -110,7 +110,7 @@ if __name__ == "__main__":
         latest_time = df_raw["time_collected"].max()
         df_latest = df_raw[df_raw["time_collected"] == latest_time].copy()
         
-        print(f"Dang phan cum cho {len(df_latest)} dong coin...")
+        print(f"Đang phân cụm cho {len(df_latest)} dòng coin...")
         df_clustered = perform_kmeans_clustering(df_latest, n_clusters=4)
         print(df_clustered['cluster'].value_counts().sort_index())
         plot_kmeans_clusters(df_clustered, is_streamlit=False)

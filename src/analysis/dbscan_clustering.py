@@ -90,7 +90,7 @@ def show(df):
     
     # Hien thi bang du lieu di biet
     outliers = df_clustered[df_clustered["cluster_dbscan"] == -1]
-    st.write("Cac dong coin di biet (Outliers):")
+    st.write("Các dòng coin dị biệt (Outliers):")
     st.dataframe(outliers[['symbol', 'price_change_24h', 'market_cap']])
 
 # --- CHAY RIENG (FILE DOC LAP) ---

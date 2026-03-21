@@ -47,14 +47,14 @@ def show(df):
     col1, col2 = st.columns(2)
 
     with col1:
-        st.subheader("Top 10 tang gia 24h")
+        st.subheader("Top 10 tăng giá 24h")
         st.dataframe(g_24h[["symbol", "price_change_24h", "current_price_usd"]])
 
     with col2:
-        st.subheader("Top 10 Volume giao dich")
+        st.subheader("Top 10 Volume giao dịch")
         st.dataframe(vol[["symbol", "total_volume", "current_price_usd"]])
 
-    st.subheader("Top 10 tang gia tu luc bat dau thu thap")
+    st.subheader("Top 10 tăng giá từ lúc bắt đầu thu thập dữ liệu")
     if g_total["pct_change_total"].sum() == 0:
         st.info("Du lieu moi thu thap 1 lan, chua co bien dong thoi gian.")
     st.dataframe(g_total[["symbol", "name", "pct_change_total", "current_price_usd"]])
