@@ -1,0 +1,31 @@
+name: Crypto_Auto_Alert
+
+on:
+  schedule:
+    - cron: '0 * * * *' # Tự động chạy mỗi tiếng (phút thứ 0)
+  workflow_dispatch: # Nút bấm chạy tay trên web GitHub
+
+jobs:
+  run-alert:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Alert System
+        env:
+          # Ép GitHub đọc secret đã cài ở bước trước
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          GCP_SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          PYTHONPATH: ${{ github.workspace }} # Giúp Python hiểu cấu trúc thư mục src
+        run: python src/alert/crypto_alert.py
