@@ -24,8 +24,12 @@ jobs:
 
       - name: Run Alert System
         env:
-          # Ép GitHub đọc secret đã cài ở bước trước
-          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           GCP_SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          EMAIL_USER: ${{ secrets.EMAIL_USER }}
+          EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+          RECEIVER_EMAIL: ${{ secrets.RECEIVER_EMAIL }}
+          # Ép GitHub đọc secret đã cài ở bước trước
+          # GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          # GCP_SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
           PYTHONPATH: ${{ github.workspace }} # Giúp Python hiểu cấu trúc thư mục src
         run: python src/alert/crypto_alert.py
