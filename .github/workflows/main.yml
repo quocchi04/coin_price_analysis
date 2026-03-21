@@ -26,6 +26,21 @@ jobs:
           cat <<EOF > service_account.json
           ${{ secrets.GCP_SERVICE_ACCOUNT }}
           EOF
+      # --- BƯỚC 1: LẤY DỮ LIỆU MỚI ---
+      - name: Collect New Crypto Data
+        run: |
+          export PYTHONPATH=${{ github.workspace }}
+          python src/data/collect_data.py
+
+      # --- BƯỚC 2: ĐỒNG BỘ LÊN GOOGLE DRIVE (Để có dữ liệu dự đoán) ---
+      - name: Sync Data to Google Drive
+        env:
+          DRIVE_FOLDER_ID: ${{ secrets.DRIVE_FOLDER_ID }}
+          # Thêm các secret cần thiết nếu file upload có dùng
+          GCP_SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+        run: |
+          export PYTHONPATH=${{ github.workspace }}
+          python src/untils/upload_to_drive.py
       - name: Run Alert System
         env:
           GCP_SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
