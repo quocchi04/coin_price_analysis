@@ -88,45 +88,58 @@ def alert():
     try:
         users = read_json_from_gcs()
     except Exception as e:
-        print(f" Không thể đọc dữ liệu từ GCS: {e}")
+        print(f" ❌ Không thể đọc dữ liệu: {e}")
         return
         
     if not users:
-        print("ℹ Không có cảnh báo nào để kiểm tra.")
+        print("ℹ️ Không có cảnh báo nào để kiểm tra.")
         return
         
     for user in users:
-        email = user['mail']
-        for detail in user['coins']:
+        # SỬA LỖI KEYERROR: Kiểm tra xem có khóa 'mail' không
+        email = user.get('mail')
+        if not email:
+            print("⚠️ Phát hiện dòng dữ liệu lỗi (thiếu email), đang bỏ qua...")
+            continue
+            
+        # Kiểm tra xem có khóa 'coins' không
+        user_coins = user.get('coins', [])
+        
+        for detail in user_coins:
+            # detail lúc này là một dict kiểu: {"bitcoin": {"breakout": 60000, ...}}
             for coin_name, thresholds in detail.items():
-                breakout = thresholds['breakout']
-                breakdown = thresholds['breakdown']
+                breakout = thresholds.get('breakout')
+                breakdown = thresholds.get('breakdown')
                 
-                # Lấy giá hiện tại an toàn hơn
+                # Nếu thiếu ngưỡng giá thì bỏ qua
+                if breakout is None or breakdown is None:
+                    continue
+                
+                # Lấy giá hiện tại từ DataFrame đã khởi tạo ở đầu file
                 current_price_row = latest_price_df.loc[latest_price_df['id'] == coin_name, 'current_price_usd']
                 
                 if not current_price_row.empty:
                     current_p = current_price_row.values[0]
                     
-                    # Kiểm tra Breakout
+                    # --- KIỂM TRA VƯỢT NGƯỠNG (BREAKOUT) ---
                     if current_p > breakout:
-                        msg = f"Giá coin {coin_name} hiện tại là {current_p} đã VƯỢT ngưỡng breakout ({breakout})"
+                        msg = f"🚀 CẢNH BÁO: {coin_name.upper()} đã vượt ngưỡng trên!\nGiá hiện tại: ${current_p:,.2f}\nNgưỡng thiết lập: ${breakout:,.2f}"
                         try:
-                            send_email(" CẢNH BÁO BREAKOUT", msg, email)
-                            print(f" Đã gửi mail breakout cho {email}")
-                        except:
-                            print(f" Lỗi khi gửi mail tới {email}")
+                            send_email("🔥 CẢNH BÁO BREAKOUT", msg, email)
+                            print(f" ✅ Đã gửi mail breakout cho {email}")
+                        except Exception as e:
+                            print(f" ❌ Lỗi gửi mail: {e}")
                             
-                    # Kiểm tra Breakdown
+                    # --- KIỂM TRA THỦNG NGƯỠNG (BREAKDOWN) ---
                     elif current_p < breakdown:
-                        msg = f"Giá coin {coin_name} hiện tại là {current_p} đã THỦNG ngưỡng breakdown ({breakdown})"
+                        msg = f"📉 CẢNH BÁO: {coin_name.upper()} đã thủng ngưỡng dưới!\nGiá hiện tại: ${current_p:,.2f}\nNgưỡng thiết lập: ${breakdown:,.2f}"
                         try:
-                            send_email(" CẢNH BÁO BREAKDOWN", msg, email)
-                            print(f" Đã gửi mail breakdown cho {email}")
-                        except:
-                            print(f" Lỗi khi gửi mail tới {email}")
+                            send_email("⚠️ CẢNH BÁO BREAKDOWN", msg, email)
+                            print(f" ✅ Đã gửi mail breakdown cho {email}")
+                        except Exception as e:
+                            print(f" ❌ Lỗi gửi mail: {e}")
                 else:
-                    print(f" Không tìm thấy giá mới nhất của {coin_name}")
+                    print(f" 🔍 Không tìm thấy giá mới nhất của {coin_name}")
 
 if __name__ == "__main__":
     # Nếu không điền breakout/breakdown, nó sẽ tự lấy Min/Max của 7 ngày qua
