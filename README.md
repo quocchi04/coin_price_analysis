@@ -1,14 +1,18 @@
 # 🚀 Crypto Auto-Alert & Dashboard
 
-Hệ thống theo dõi giá Crypto 24/7, tự động lưu trữ dữ liệu lên Google Cloud và gửi cảnh báo qua Email. Dự án kết hợp sức mạnh của Python, Cloud Computing và Automation.
+**Hệ thống giám sát và phân tích thị trường Tiền điện tử thông minh.** Hệ thống theo dõi giá Crypto 24/7, từ việc thu thập dữ liệu thời gian thực, tự động lưu trữ dữ liệu lên Google Cloud, phân tích và gửi cảnh báo qua Email. Dự án kết hợp sức mạnh của Python, Cloud Computing và Automation.
 
 ---
+### 🌟 Tính năng nổi bật
+* **📡 Real-time Data Collection:** Tự động lấy dữ liệu giá, vốn hóa và khối lượng giao dịch của Top 500 đồng coin từ CoinGecko API mỗi giờ.
 
-### 🌟 Tính năng chính
-* **Auto-Tracking:** Tự động cập nhật giá từ API mỗi giờ (GitHub Actions).
-* **Cloud Storage:** Lưu trữ dữ liệu lịch sử an toàn trên Google Drive/GCS.
-* **Smart Alert:** Gửi thông báo Gmail ngay khi giá chạm ngưỡng mục tiêu.
-* **Live Dashboard:** Theo dõi biến động trực quan qua giao diện Streamlit.
+* **☁️ Cloud Automation:** Vận hành hoàn toàn trên GitHub Actions, không cần treo máy cá nhân.
+
+* **💾 Hybrid Storage:** Kết hợp lưu trữ tạm thời trên máy ảo và lưu trữ vĩnh viễn (Data Lake) trên Google Drive thông qua Service Account.
+
+* **🔔 Smart Alert System:** Hệ thống tự động phân tích biến động và gửi cảnh báo "tức thời" qua Email khi thị trường có biến động mạnh.
+
+* **📊 Interactive Dashboard:** Trực quan hóa xu hướng giá, phân cụm thị trường (Clustering) và dự báo xu hướng (Trend Prediction) thông qua Streamlit.
 
 ### 🛠 Tech Stack
 | Thành phần | Công nghệ sử dụng |
@@ -41,27 +45,120 @@ Hệ thống vận hành khép kín qua 4 giai đoạn chính:
 * **Hiển thị:** Dữ liệu được trực quan hóa thành các biểu đồ tương tác bằng **Plotly**, giúp người dùng dễ dàng theo dõi xu hướng và biến động của thị trường.
 
 ### 📁 Cấu trúc dự án (Project Structure)
-├── .github/workflows/      # Cấu hình GitHub Actions (chạy main.yml tự động)
-├── Data/                   # Chứa các file dữ liệu CSV cục bộ (Full data, Top 500 ids)
+
+```text
+├── .github/workflows/      # Cấu hình chạy main.yml tự động mỗi giờ
+├── Data/                   # Chứa các file dữ liệu CSV cục bộ
 ├── src/                    # Thư mục chứa mã nguồn chính
-│   ├── alert/              # Logic kiểm tra giá và gửi thông báo Email
+│   ├── alert/              # Logic kiểm tra giá & gửi Email
 │   │   ├── crypto_alert.py
 │   │   └── del_alert.py
 │   ├── analysis/           # Các module phân tích chuyên sâu
-│   │   ├── coin_analysis.py      # Phân tích cơ bản
-│   │   ├── coin_ranking.py       # Phân tích xếp hạng
-│   │   ├── coin_trend.py         # Phân tích xu hướng giá
-│   │   ├── dbscan_clustering.py  # Phân cụm mật độ DBSCAN
-│   │   ├── KMeans_clustering.py  # Phân cụm K-Means
-│   │   └── pattern_matching.py   # Nhận dạng hình thái
-│   ├── data/               
-│   │   └── collect_data.py       # Module thu thập dữ liệu
+│   │   ├── coin_analysis.py
+│   │   ├── coin_ranking.py
+│   │   ├── coin_trend.py
+│   │   ├── dbscan_clustering.py
+│   │   ├── KMeans_clustering.py
+│   │   └── pattern_matching.py
+│   ├── data/               # Module thu thập dữ liệu (collect_data.py)
 │   ├── Prediction/         # Các mô hình dự báo giá
 │   │   ├── coin_prediction.py
 │   │   └── price_trend_prediction.py
 │   └── untils/             # Tiện ích hệ thống (Drive API, Send Mail)
-│       ├── coin_prediction.py
-│       └── price_trend_prediction.py
+│       ├── drive.py
+│       ├── send_mail_auto.py
+│       └── upload_to_drive.py
 ├── app.py                  # Giao diện chính chạy trên Streamlit
 ├── requirements.txt        # Danh sách các thư viện cần cài đặt
-└── service_account.json    # File xác thực Google Cloud (Sử dụng tại Local)
+└── service_account.json    # File xác thực Google Cloud (Chạy Local)
+```
+### 🚀 Hướng dẫn Cài đặt & Sử dụng
+
+### 1. Yêu cầu hệ thống
+* **Python:** Phiên bản 3.10 trở lên.
+* **Tài khoản Google Cloud:** Để lấy file `service_account.json` (quyền Drive/GCS).
+* **Gmail App Password:** Để gửi email cảnh báo tự động (16 ký tự mã xác thực ứng dụng).
+
+### 2. Cài đặt tại máy cục bộ (Local)
+
+**Bước 1: Clone dự án về máy**
+```bash
+git clone [https://github.com/quocchi04/coin_price_analysis.git](https://github.com/quocchi04/coin_price_analysis.git)
+cd coin_price_analysis
+```
+**Bước 2: Cài đặt các thư viện cần thiết và môi trường**
+```bash
+pip install -r requirements.txt
+```
+
+```bash
+python -m venv venv
+# Trên Windows
+venv\Scripts\activate
+# Trên macOS/Linux
+source venv/bin/activate
+```
+**Bước 3: Thiết lập file cấu hình**
+
+#### 1. Lấy Google Service Account & Drive ID
+* **Service Account**: 
+1. Truy cập [**Google Cloud Console:**](https://console.cloud.google.com/)
+2. Tạo một Project mới.
+3. Vào mục **APIs & Services** > **Library**, tìm và Enable **Google Drive API**.
+4. Vào mục **IAM & Admin** > **Service Accounts** > **Create Service Account**.
+5. Sau khi tạo, vào tab **Keys** > **Add Key** > **Create new key** (chọn định dạng **JSON**). Tải file này về và đổi tên thành `service_account.json`.
+
+* **Drive Folder ID**:
+1. Mở thư mục [**Drive Folder:**](https://drive.google.com/drive/u/1/folders/1DfQtRJ9IWW05TegnXf6o4xKes190DbUu)
+2. ID là chuỗi ký tự cuối cùng trên thanh địa chỉ trình duyệt (sau chữ `folders/`).
+3. **Quan trọng**: Nhấn nút **Share** thư mục này cho email của Service Account (có trong file JSON) với quyền **Editor**.
+
+#### 2. Lấy CoinGecko API (Tùy chọn)
+* Dự án hiện đang dùng API công khai (Public) không cần Key.
+
+* Nếu bạn sử dụng tài khoản Demo/Pro để tránh bị giới hạn tốc độ (Rate limit), hãy đăng ký tại CoinGecko Developer Dashboard và thêm `API_KEY` vào file `.env`.
+
+#### 3. Lấy Gmail App Password (Cho hệ thống Alert)
+Để hệ thống có thể gửi email cảnh báo tự động:
+
+1. Truy cập vào [**Tài khoản Google**](https://myaccount.google.com/) của bạn.
+
+2. Bật **Xác minh 2 lớp (2-Step Verification)**.
+
+3. Tìm kiếm mục **App Passwords** (Mật khẩu ứng dụng).
+
+4. Chọn ứng dụng là "Thư" và thiết bị là "Khác", đặt tên là "Crypto Alert".
+
+5. Copy mã 16 ký tự hiện ra để dán vào biến `EMAIL_PASS` trên GitHub Secrets.
+
+**Bước 4: Chạy ứng dụng Dashboard**
+```bash
+streamlit run app.py
+```
+### 3. Cấu hình Chạy tự động (GitHub Actions)
+Để hệ thống tự động cập nhật giá mỗi giờ và gửi mail, bạn cần thiết lập Secrets trên GitHub:
+
+#### 1. Truy cập vào Repository trên `GitHub` > `Settings` > `Secrets and variable`s > `Actions`.
+
+#### 2. Nhấn `New repository secret` và thêm các biến sau:
+
+* `GCP_SERVICE_ACCOUNT`: Dán nội dung JSON của file Service Account.
+
+* `DRIVE_FOLDER_ID` : Địa chỉ ID của thư mục lưu trữ trên Google Drive.
+
+* `EMAIL_USER`: Địa chỉ Gmail gửi cảnh báo.
+
+* `EMAIL_PASS`: Mật khẩu ứng dụng (App Password) của Gmail.
+
+* `RECEIVER_EMAIL`: Địa chỉ Email nhận thông báo.
+---
+
+### 🛠 Khắc phục lỗi thường gặp
+* **FileNotFoundError**: Đảm bảo file `service_account.json` nằm đúng ở thư mục gốc (root).
+
+* **SMTPAuthenticationError**: Kiểm tra lại `EMAIL_PASS`, đảm bảo đó là mã 16 ký tự từ `Google App Password`.
+
+* **ModuleNotFoundError**: Hãy chắc chắn bạn đã chạy lệnh cài đặt thư viện ở Bước 2.
+---
+### 🌐 Live Demo
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://coin-price-analysis.streamlit.app/)
