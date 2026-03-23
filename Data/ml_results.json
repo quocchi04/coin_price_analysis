@@ -1,0 +1,31 @@
+{
+    "accuracy": 0.6588566073102156,
+    "confusion_matrix": [
+        [
+            486,
+            168
+        ],
+        [
+            196,
+            217
+        ]
+    ],
+    "features": [
+        "current_price_usd",
+        "market_cap",
+        "total_volume",
+        "price_change_24h",
+        "diff_ma",
+        "prev_return"
+    ],
+    "importances": [
+        0.16527811638494572,
+        0.14301834865163002,
+        0.1432603789568947,
+        0.17336340524616684,
+        0.1674613591928215,
+        0.20761839156754125
+    ],
+    "market_sentiment": "GI\u1ea2M",
+    "up_ratio": 0.3803680981595092
+}
