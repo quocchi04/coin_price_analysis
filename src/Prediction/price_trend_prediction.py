@@ -6,7 +6,7 @@ import io
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
-
+import json
 # --- ĐƯỜNG DẪN DỮ LIỆU ---
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DATA_FILE = os.path.join(BASE_DIR, "Data", "crypto_full_data.csv")
@@ -15,21 +15,23 @@ def setup_console():
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
 
 def prepare_data(df):
-    # Sắp xếp theo thời gian
     df = df.sort_values(['id', 'time_collected'])
     
-    # Tạo biến mục tiêu (Target): 1 nếu giá bước sau cao hơn bước trước, 0 nếu thấp hơn
-    # Dùng hàm shift(-1) để lấy giá của tương lai đặt cạnh giá hiện tại
+    # 1. Thêm chỉ số biến động (Giá hiện tại so với trung bình 3 phiên trước)
+    df['ma_3'] = df.groupby('id')['current_price_usd'].transform(lambda x: x.rolling(window=3).mean())
+    df['diff_ma'] = df['current_price_usd'] - df['ma_3']
+    
+    # 2. Thêm lợi nhuận của phiên trước (Lag features)
+    df['prev_return'] = df.groupby('id')['current_price_usd'].transform(lambda x: x.pct_change(fill_method=None))
+
+    # Tạo target như cũ
     df['next_price'] = df.groupby('id')['current_price_usd'].shift(-1)
     df['target'] = (df['next_price'] > df['current_price_usd']).astype(int)
     
-    # Chọn các đặc trưng (Features) để học
-    features = ['current_price_usd', 'market_cap', 'total_volume', 'price_change_24h']
+    # Thêm các đặc trưng mới vào Features
+    features = ['current_price_usd', 'market_cap', 'total_volume', 'price_change_24h', 'diff_ma', 'prev_return']
     
-    # Ép kiểu số và xóa bỏ dòng NaN (dòng cuối cùng của mỗi coin sẽ bị NaN vì ko có tương lai)
-    for col in features:
-        df[col] = pd.to_numeric(df[col], errors='coerce')
-    
+    # Xử lý NaN phát sinh do rolling/pct_change
     df_ml = df.dropna(subset=features + ['target'])
     return df_ml[features], df_ml['target']
 
@@ -78,6 +80,27 @@ def run_prediction():
         print(f"- {feat}: {importances[i]:.4f}")
 
     print("\n Dự báo hoàn tất.")
+    # Lấy dữ liệu mới nhất của mỗi coin (dòng cuối cùng) để dự báo
+    latest_data = X.tail(len(df['id'].unique())) 
+    all_predictions = model.predict(latest_data)
+    # ---  LƯU KẾT QUẢ CHO APP ---
+    up_ratio = (all_predictions == 1).sum() / len(all_predictions)
+    
+    market_sentiment = "TĂNG" if up_ratio > 0.5 else "GIẢM"
 
+    result_data = {
+        "accuracy": accuracy_score(y_test, y_pred),
+        "confusion_matrix": confusion_matrix(y_test, y_pred).tolist(),
+        "features": list(X.columns),
+        "importances": importances.tolist(),
+        "market_sentiment": market_sentiment, 
+        "up_ratio": float(up_ratio) 
+    }
+    
+    # Lưu vào thư mục Data
+    result_path = os.path.join(BASE_DIR, "Data", "ml_results.json")
+    with open(result_path, "w", encoding="utf-8") as f:
+        json.dump(result_data, f, indent=4)
+    print(f" Đã xuất file thông số mô hình ra: {result_path}")
 if __name__ == "__main__":
     run_prediction()
