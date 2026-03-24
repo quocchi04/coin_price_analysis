@@ -4,8 +4,8 @@
         "coins": [
             {
                 "bitcoin": {
-                    "breakout": 68030.45,
-                    "breakdown": 75191.55
+                    "breakout": 75191.55,
+                    "breakdown": 68030.45
                 }
             }
         ]
