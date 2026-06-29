@@ -200,6 +200,10 @@ else:
     st.session_state.df = clean_market_df(st.session_state.df)
 
 df = st.session_state.df
+if df is None or df.empty:
+    st.sidebar.error("Chưa tải được dữ liệu hợp lệ")
+    st.error("Không có dữ liệu hợp lệ để hiển thị. Hãy kiểm tra file Data/crypto_full_data.csv hoặc Google Drive.")
+    st.stop()
 coins = get_coin_options(df)
 data_ready = df is not None and not df.empty and len(coins) > 0
 

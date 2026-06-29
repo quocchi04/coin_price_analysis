@@ -1,121 +1,177 @@
 import os
 import io
 import pandas as pd
-from google.oauth2 import service_account
-from googleapiclient.discovery import build
-from googleapiclient.http import MediaIoBaseDownload
 
-def get_data():
-    # ==== 1. CẤU HÌNH ĐƯỜNG DẪN TỰ ĐỘNG ==== #
-    # Lấy thư mục gốc của dự án (Coins_Price_Analysis)
-    BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    
-    # Ghép nối để luôn tìm đúng file json ở thư mục gốc
-    SERVICE_ACCOUNT_FILE = os.path.join(BASE_DIR, 'service_account.json')
-    
-    
-    FOLDER_ID = '1DfQtRJ9IWW05TegnXf6o4xKes190DbUu' 
-    
-    SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
 
-    # Kiểm tra file xác thực trước khi chạy
-    if not os.path.exists(SERVICE_ACCOUNT_FILE):
-        raise FileNotFoundError(f"❌ Không tìm thấy file xác thực tại: {SERVICE_ACCOUNT_FILE}. Hãy copy file này vào thư mục gốc dự án!")
+def _base_dir():
+    return os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-    # ==== 2. XÁC THỰC ==== #
-    credentials = service_account.Credentials.from_service_account_file(
-        SERVICE_ACCOUNT_FILE, scopes=SCOPES)
-    drive_service = build('drive', 'v3', credentials=credentials)
 
-    # ==== 3. LẤY TOÀN BỘ FILE CSV TRONG THƯ MỤC ==== #
-    all_files = []
-    page_token = None
-    print(f"🔍 Đang quét thư mục Drive: {FOLDER_ID}...")
-    
-    try:
-        while True:
-            response = drive_service.files().list(
-                q=f"'{FOLDER_ID}' in parents and mimeType='text/csv' and trashed=false",
-                orderBy='createdTime desc',
-                spaces='drive',
-                fields='nextPageToken, files(id, name, createdTime)'
-            ).execute()
-            all_files.extend(response.get('files', []))
-            page_token = response.get('nextPageToken')
-            if not page_token:
-                break
-    except Exception as e:
-        print(f"❌ Lỗi kết nối Google Drive: {e}")
-        return pd.DataFrame() # Trả về df rỗng nếu lỗi
-
-    # ==== 4. LỌC VÀ LẤY FILE MỚI NHẤT ==== #
-    filtered_files = [f for f in all_files if f['name'].startswith("crypto_full_data")]
-    if not filtered_files:
-        print("⚠️ Không tìm thấy file nào có tên bắt đầu bằng 'crypto_full_data' trên Drive.")
-        return pd.DataFrame()
-
-    file = filtered_files[0]
-    file_id = file['id']
-    print(f"📥 Đang tải file mới nhất: {file['name']}")
-
-    # ==== 5. TẢI VÀ ĐỌC DỮ LIỆU ==== #
-    request = drive_service.files().get_media(fileId=file_id)
-    fh = io.BytesIO()
-    downloader = MediaIoBaseDownload(fh, request)
-    
-    done = False
-    while not done:
-        status, done = downloader.next_chunk()
-        
-    fh.seek(0)
-    # Ép buộc dùng engine 'python' và đọc cột thời gian là CHUỖI THÔ (str)
-    df = pd.read_csv(fh, engine='python', dtype={'time_collected': str})
-    
-    # ==== XỬ LÝ DỮ LIỆU TRIỆT ĐỂ (BYPASS TOÀN BỘ BUG PYARROW) ==== #
+def _clean_df(df):
     if df is None or df.empty:
         return pd.DataFrame()
 
-    if "time_collected" in df.columns:
-        import numpy as np
-        from datetime import datetime
-        
-        # 1. Xử lý cột thời gian bằng Python thuần (Tuyệt đối không gọi pd.to_datetime ở đây)
-        raw_times = df["time_collected"].fillna("").astype(str).tolist()
-        clean_times = []
-        for t in raw_times:
-            if not t or t.lower() == 'nan' or t.strip() == '':
-                clean_times.append(np.datetime64('NaT'))
-                continue
-            try:
-                base_t = t.split('.')[0].replace('T', ' ')
-                clean_times.append(datetime.strptime(base_t, "%Y-%m-%d %H:%M:%S"))
-            except Exception:
-                try:
-                    clean_times.append(datetime.strptime(t.strip(), "%Y-%m-%d"))
-                except Exception:
-                    clean_times.append(np.datetime64('NaT'))
-        
-        # 2. GIẢI PHÓNG TOÀN BỘ CỘT khỏi cấu trúc lỗi PyArrow Extension của Pandas
-        clean_dict = {}
-        for col in df.columns:
-            if col == "time_collected":
-                # Ép cứng về mảng datetime64 tiêu chuẩn của NumPy
-                clean_dict[col] = np.array(clean_times, dtype='datetime64[ns]')
-            else:
-                # Ép các cột khác (như cột 'id') về mảng NumPy nguyên thủy để không bị lỗi khi lọc ở app.py
-                clean_dict[col] = df[col].to_numpy()
-        
-        # 3. Dựng lại DataFrame mới tinh khiết, sạch bóng PyArrow
-        df = pd.DataFrame(clean_dict)
-        df = df.dropna(subset=["time_collected"])
-        
-    else:
-        print("❌ Lỗi: File không có cột 'time_collected'!")
+    df = df.copy()
+
+    # Làm sạch tên cột
+    df.columns = df.columns.astype(str).str.strip()
+    df = df.loc[:, ~df.columns.duplicated()].copy()
+
+    # Xóa cột index rác nếu có
+    for col in ["Unnamed: 0", "index"]:
+        if col in df.columns:
+            df = df.drop(columns=[col])
+
+    required_cols = ["id", "time_collected", "current_price_usd"]
+    missing = [c for c in required_cols if c not in df.columns]
+    if missing:
+        print(f"❌ File thiếu cột bắt buộc: {missing}")
+        print(f"📌 Các cột hiện có: {list(df.columns)}")
         return pd.DataFrame()
-        
-    print(f"✅ Thành công! Đã tải {len(df)} dòng dữ liệu từ Drive.")
+
+    # Ép kiểu dữ liệu
+    df["id"] = df["id"].astype(str).str.strip().str.lower()
+    df["time_collected"] = pd.to_datetime(df["time_collected"], errors="coerce")
+
+    numeric_cols = [
+        "current_price_usd",
+        "market_cap",
+        "price_change_24h",
+        "total_volume",
+        "circulating_supply",
+        "total_supply",
+    ]
+
+    for col in numeric_cols:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+
+    # Chỉ bỏ dòng thiếu id, thời gian, giá
+    df = df.dropna(subset=["id", "time_collected", "current_price_usd"])
+    df = df.sort_values(["id", "time_collected"]).reset_index(drop=True)
+
     return df
-if __name__ == "__main__":  
+
+
+def _read_local_csv(base_dir):
+    local_paths = [
+        os.path.join(base_dir, "Data", "crypto_full_data.csv"),
+        os.path.join(base_dir, "data", "crypto_full_data.csv"),
+        os.path.join(base_dir, "crypto_full_data.csv"),
+    ]
+
+    for path in local_paths:
+        if os.path.exists(path):
+            try:
+                print(f"📄 Đang đọc dữ liệu local: {path}")
+                df = pd.read_csv(path, dtype={"time_collected": str}, low_memory=False)
+                df = _clean_df(df)
+
+                if not df.empty:
+                    print(f"✅ Đã đọc local thành công: {len(df)} dòng")
+                    return df
+
+            except Exception as e:
+                print(f"⚠️ Lỗi đọc file local {path}: {e}")
+
+    return pd.DataFrame()
+
+
+def _read_drive_csv(base_dir):
+    service_account_file = os.path.join(base_dir, "service_account.json")
+
+    # Ưu tiên lấy từ Streamlit Secrets / GitHub Secrets nếu có
+    folder_id = os.getenv("DRIVE_FOLDER_ID")
+
+    # Nếu bạn chưa khai báo DRIVE_FOLDER_ID thì dùng ID cũ của bạn
+    if not folder_id:
+        folder_id = "1DfQtRJ9IWW05TegnXf6o4xKes190DbUu"
+
+    if not os.path.exists(service_account_file):
+        print(f"⚠️ Không tìm thấy service_account.json tại: {service_account_file}")
+        return pd.DataFrame()
+
+    if not folder_id:
+        print("⚠️ Chưa có DRIVE_FOLDER_ID")
+        return pd.DataFrame()
+
+    try:
+        from google.oauth2 import service_account
+        from googleapiclient.discovery import build
+        from googleapiclient.http import MediaIoBaseDownload
+
+        scopes = ["https://www.googleapis.com/auth/drive.readonly"]
+
+        credentials = service_account.Credentials.from_service_account_file(
+            service_account_file,
+            scopes=scopes,
+        )
+
+        drive_service = build("drive", "v3", credentials=credentials)
+
+        print(f"🔍 Đang quét Google Drive folder: {folder_id}")
+
+        response = drive_service.files().list(
+            q=f"'{folder_id}' in parents and trashed=false and name contains 'crypto_full_data'",
+            orderBy="modifiedTime desc",
+            spaces="drive",
+            fields="files(id, name, modifiedTime, mimeType)",
+            pageSize=10,
+            supportsAllDrives=True,
+            includeItemsFromAllDrives=True,
+        ).execute()
+
+        files = response.get("files", [])
+
+        if not files:
+            print("⚠️ Không tìm thấy file crypto_full_data trên Drive")
+            return pd.DataFrame()
+
+        file = files[0]
+        file_id = file["id"]
+        print(f"📥 Đang tải file Drive mới nhất: {file['name']}")
+
+        request = drive_service.files().get_media(fileId=file_id)
+        fh = io.BytesIO()
+        downloader = MediaIoBaseDownload(fh, request)
+
+        done = False
+        while not done:
+            _, done = downloader.next_chunk()
+
+        fh.seek(0)
+
+        df = pd.read_csv(fh, dtype={"time_collected": str}, low_memory=False)
+        df = _clean_df(df)
+
+        if not df.empty:
+            print(f"✅ Đã đọc Drive thành công: {len(df)} dòng")
+            return df
+
+    except Exception as e:
+        print(f"⚠️ Lỗi đọc Google Drive: {e}")
+
+    return pd.DataFrame()
+
+
+def get_data():
+    base_dir = _base_dir()
+
+    # 1. Thử đọc Drive trước để app vẫn cập nhật tự động như cũ
+    df_drive = _read_drive_csv(base_dir)
+    if not df_drive.empty:
+        return df_drive
+
+    # 2. Nếu Drive lỗi thì đọc file local Data/crypto_full_data.csv
+    df_local = _read_local_csv(base_dir)
+    if not df_local.empty:
+        return df_local
+
+    print("❌ Không tải được dữ liệu từ Drive hoặc local CSV")
+    return pd.DataFrame()
+
+
+if __name__ == "__main__":
     df_test = get_data()
-    if not df_test.empty:
-        print(df_test.head())
+    print(df_test.head())
+    print(df_test.shape)
