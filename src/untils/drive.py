@@ -68,8 +68,7 @@ def get_data():
         status, done = downloader.next_chunk()
         
     fh.seek(0)
-    
-    # CHÌA KHÓA: Ép buộc dùng engine 'python' và đọc cột thời gian là CHUỖI THÔ (str)
+    # Ép buộc dùng engine 'python' và đọc cột thời gian là CHUỖI THÔ (str)
     df = pd.read_csv(fh, engine='python', dtype={'time_collected': str})
     
     # ==== XỬ LÝ DỮ LIỆU TRIỆT ĐỂ (BYPASS TOÀN BỘ BUG PYARROW) ==== #
@@ -80,14 +79,19 @@ def get_data():
         # 1. Xóa bỏ dòng trống
         df = df.dropna(subset=["time_collected"])
         
-        # 2. Đưa về List Python thuần túy (Thoát ly hoàn toàn khỏi bộ nhớ của Pandas/Arrow)
+        # 2. Đưa về List Python thuần túy 
         pure_list = [str(x).strip() for x in df["time_collected"].tolist()]
         
-        # 3. Ép kiểu ngược lại vào dataframe và TẮT cache
+        # 3. Ép kiểu ngày tháng và TẮT cache
         df["time_collected"] = pd.to_datetime(pure_list, errors='coerce', cache=False)
         
         # 4. Dọn sạch dòng lỗi NaT phát sinh
         df = df.dropna(subset=["time_collected"])
+        
+        # ⭐ CHIÊU CUỐI DIỆT TẬN GỐC: Tẩy tủy DataFrame sang dạng thuần túy
+        # Biến DF thành Dict rồi dựng lại từ đầu để xóa sạch hoàn toàn dấu vết PyArrow khỏi hệ thống
+        df = pd.DataFrame(df.to_dict(orient='list'))
+        
     else:
         print("❌ Lỗi: File không có cột 'time_collected'!")
         return pd.DataFrame()
