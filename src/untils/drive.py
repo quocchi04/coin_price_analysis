@@ -70,7 +70,7 @@ def get_data():
     fh.seek(0)
     df = pd.read_csv(fh)
     
-   # ==== 6. XỬ LÝ DỮ LIỆU AN TOÀN (BẢN VÁ LỖI PYARROW) ==== #
+# ==== 6. XỬ LÝ DỮ LIỆU AN TOÀN (TẮT CACHE ĐỂ DIỆT TẬN GỐC LỖI) ==== #
     # 1. Kiểm tra xem file tải về có dữ liệu không
     if df is None or df.empty:
         print("⚠️ Cảnh báo: File CSV tải về trống rỗng hoặc không có dữ liệu!")
@@ -78,16 +78,14 @@ def get_data():
 
     # 2. Xử lý ép kiểu thời gian an toàn
     if "time_collected" in df.columns:
-        # Loại bỏ các dòng trống ở cột thời gian trước
+        # Dọn sạch các dòng trống trước
         df = df.dropna(subset=["time_collected"])
         
-        # CHÌA KHÓA: Chuyển cột sang dạng mảng NumPy thô để bypass lỗi của PyArrow trên Cloud
-        raw_time_array = df["time_collected"].to_numpy()
+        # CHÌA KHÓA VÀNG: Chuyển thành chuỗi chuần .astype(str) và thêm cache=False 
+        # Lệnh này sẽ ép Pandas bỏ qua hàm _convert_and_box_cache đang bị lỗi
+        df["time_collected"] = pd.to_datetime(df["time_collected"].astype(str), errors='coerce', cache=False)
         
-        # Ép kiểu trên mảng thô này sẽ an toàn 100%
-        df["time_collected"] = pd.to_datetime(raw_time_array, errors='coerce')
-        
-        # Loại bỏ tiếp các dòng bị biến thành NaT (nếu có)
+        # Loại bỏ tiếp các dòng bị biến thành NaT nếu có
         df = df.dropna(subset=["time_collected"])
     else:
         print("❌ Lỗi: File CSV không có cột 'time_collected'!")
