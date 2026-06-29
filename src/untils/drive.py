@@ -70,13 +70,28 @@ def get_data():
     fh.seek(0)
     df = pd.read_csv(fh)
     
-    # Chuyển đổi thời gian
+    # ==== 6. XỬ LÝ DỮ LIỆU AN TOÀN (ĐÃ SỬA CHỐNG SẬP APP) ==== #
+    # 1. Kiểm tra xem file tải về có dữ liệu không
+    if df is None or df.empty:
+        print("⚠️ Cảnh báo: File CSV tải về trống rỗng hoặc không có dữ liệu!")
+        return pd.DataFrame()
+
+    # 2. Xử lý ép kiểu thời gian an toàn
     if "time_collected" in df.columns:
-        df["time_collected"] = pd.to_datetime(df["time_collected"])
-    
+        # Loại bỏ các dòng trống ở cột thời gian trước khi chuyển đổi
+        df = df.dropna(subset=["time_collected"])
+        
+        # Thêm errors='coerce' để nếu dòng nào bị lỗi định dạng, nó sẽ biến thành NaT chứ không làm sập App
+        df["time_collected"] = pd.to_datetime(df["time_collected"], errors='coerce')
+        
+        # Loại bỏ tiếp các dòng bị biến thành NaT (nếu có) sau khi ép kiểu lỗi
+        df = df.dropna(subset=["time_collected"])
+    else:
+        print("❌ Lỗi: File CSV không có cột 'time_collected'!")
+        return pd.DataFrame()
+        
     print(f"✅ Thành công! Đã tải {len(df)} dòng dữ liệu từ Drive.")
     return df
-
 if __name__ == "__main__":  
     df_test = get_data()
     if not df_test.empty:
