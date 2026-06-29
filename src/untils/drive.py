@@ -72,17 +72,35 @@ def get_data():
     df = pd.read_csv(fh, engine='python', dtype={'time_collected': str})
     
     # ==== XỬ LÝ DỮ LIỆU TRIỆT ĐỂ (BYPASS TOÀN BỘ BUG PYARROW) ==== #
+    # ==== XỬ LÝ DỮ LIỆU TRIỆT ĐỂ (BYPASS TOÀN BỘ BUG PYARROW) ==== #
     if df is None or df.empty:
         return pd.DataFrame()
 
     if "time_collected" in df.columns:
         df = df.dropna(subset=["time_collected"])
         
-        # 🚀 ÉP THẲNG SANG MẢNG NUMPY: Vừa nhanh như chớp vừa xóa sạch dấu vết Arrow Bug
-        raw_numpy_array = df["time_collected"].astype(str).to_numpy()
-        df["time_collected"] = pd.to_datetime(raw_numpy_array, errors='coerce')
+        # 👑 FIX TRIỆT ĐỂ: Tách riêng cột thành danh sách Python thuần
+        raw_list = df["time_collected"].astype(str).tolist()
         
+        # Sử dụng thư viện datetime tiêu chuẩn của Python để ép kiểu (Tuyệt đối không dính dáng tới cache của Pandas)
+        from datetime import datetime
+        parsed_dates = []
+        for x in raw_list:
+            try:
+                # Thử định dạng chuẩn YYYY-MM-DD HH:MM:SS
+                parsed_dates.append(datetime.strptime(x.split('.')[0], "%Y-%m-%d %H:%M:%S"))
+            except Exception:
+                try:
+                    # Dự phòng định dạng ISO / Tự động nhận diện qua Pandas nhưng cô lập từng phần tử đơn lẻ
+                    parsed_dates.append(pd.to_datetime(x, errors='coerce'))
+                except Exception:
+                    parsed_dates.append(pd.NaT)
+                    
+        # Chuyển đổi ngược lại thành List thuần túy để đưa vào cấu trúc Dict
+        df["time_collected"] = parsed_dates
         df = df.dropna(subset=["time_collected"])
+        
+        # Đóng gói lại thành DataFrame mới tinh, sạch hoàn toàn khỏi PyArrow
         df = pd.DataFrame(df.to_dict(orient='list'))
         
     else:
