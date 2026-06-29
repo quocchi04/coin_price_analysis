@@ -1,9 +1,9 @@
 import os
-import io
+import tempfile
 import pandas as pd
-from google.oauth2 import service_account
-from googleapiclient.discovery import build
-from googleapiclient.http import MediaIoBaseDownload
+
+
+DRIVE_FILE_ID = "1v_EbHYMazXALKZD6dldtgkqVz-9WzWU5"
 
 
 def clean_df(df):
@@ -44,51 +44,58 @@ def clean_df(df):
     return df
 
 
-def get_data():
+def read_local_backup():
     base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    service_account_file = os.path.join(base_dir, "service_account.json")
+    local_file = os.path.join(base_dir, "Data", "crypto_full_data.csv")
 
-    file_id = os.getenv("DRIVE_FILE_ID", "1v_EbHYMazXALKZD6dldtgkqVz-9WzWU5")
+    if os.path.exists(local_file):
+        print(f"📄 Đọc file local backup: {local_file}")
+        df = pd.read_csv(local_file, dtype={"time_collected": str}, low_memory=False)
+        return clean_df(df)
 
-    if not os.path.exists(service_account_file):
-        print(f"❌ Không tìm thấy service_account.json tại: {service_account_file}")
-        return pd.DataFrame()
+    print("⚠️ Không có file local backup.")
+    return pd.DataFrame()
+
+
+def get_data():
+    """
+    Streamlit Cloud đọc trực tiếp file CSV từ Google Drive public.
+    Không dùng service_account.json để tránh lỗi Secrets.
+    """
+
+    file_id = os.getenv("DRIVE_FILE_ID", DRIVE_FILE_ID)
+    temp_file = os.path.join(tempfile.gettempdir(), "crypto_full_data.csv")
 
     try:
-        scopes = ["https://www.googleapis.com/auth/drive.readonly"]
+        import gdown
 
-        credentials = service_account.Credentials.from_service_account_file(
-            service_account_file,
-            scopes=scopes
-        )
+        url = f"https://drive.google.com/uc?id={file_id}"
+        print(f"📥 Đang tải dữ liệu từ Google Drive file_id={file_id}")
 
-        drive_service = build("drive", "v3", credentials=credentials)
+        output = gdown.download(url, temp_file, quiet=False)
 
-        print(f"📥 Đang tải file CSV từ Google Drive, file_id={file_id}")
+        if output is None:
+            print("❌ gdown không tải được file từ Drive.")
+            return read_local_backup()
 
-        request = drive_service.files().get_media(fileId=file_id)
-        fh = io.BytesIO()
+        if not os.path.exists(temp_file) or os.path.getsize(temp_file) == 0:
+            print("❌ File tải từ Drive bị rỗng.")
+            return read_local_backup()
 
-        downloader = MediaIoBaseDownload(fh, request)
-        done = False
-
-        while not done:
-            _, done = downloader.next_chunk()
-
-        fh.seek(0)
-
-        df = pd.read_csv(fh, dtype={"time_collected": str}, low_memory=False)
+        df = pd.read_csv(temp_file, dtype={"time_collected": str}, low_memory=False)
         df = clean_df(df)
 
         print(f"✅ Đã đọc Drive thành công: {len(df)} dòng")
         return df
 
     except Exception as e:
-        print(f"❌ Lỗi đọc file Google Drive: {e}")
-        return pd.DataFrame()
+        print(f"❌ Lỗi tải Drive bằng gdown: {e}")
+        print("🔁 Chuyển sang đọc file local backup nếu có.")
+        return read_local_backup()
 
 
 if __name__ == "__main__":
     df = get_data()
     print(df.shape)
+    print(df.columns.tolist())
     print(df.head())

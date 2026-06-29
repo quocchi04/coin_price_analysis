@@ -28,3 +28,4 @@ pyarrow
 
 # Tiện ích hệ thống (Để fix cái lỗi ModuleNotFoundError: dotenv)
 python-dotenv
+gdown
