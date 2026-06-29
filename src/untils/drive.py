@@ -68,27 +68,28 @@ def get_data():
         status, done = downloader.next_chunk()
         
     fh.seek(0)
-    df = pd.read_csv(fh)
     
-# ==== 6. XỬ LÝ DỮ LIỆU AN TOÀN (TẮT CACHE ĐỂ DIỆT TẬN GỐC LỖI) ==== #
-    # 1. Kiểm tra xem file tải về có dữ liệu không
+    # CHÌA KHÓA: Ép buộc dùng engine 'python' và đọc cột thời gian là CHUỖI THÔ (str)
+    df = pd.read_csv(fh, engine='python', dtype={'time_collected': str})
+    
+    # ==== XỬ LÝ DỮ LIỆU TRIỆT ĐỂ (BYPASS TOÀN BỘ BUG PYARROW) ==== #
     if df is None or df.empty:
-        print("⚠️ Cảnh báo: File CSV tải về trống rỗng hoặc không có dữ liệu!")
         return pd.DataFrame()
 
-    # 2. Xử lý ép kiểu thời gian an toàn
     if "time_collected" in df.columns:
-        # Dọn sạch các dòng trống trước
+        # 1. Xóa bỏ dòng trống
         df = df.dropna(subset=["time_collected"])
         
-        # CHÌA KHÓA VÀNG: Chuyển thành chuỗi chuần .astype(str) và thêm cache=False 
-        # Lệnh này sẽ ép Pandas bỏ qua hàm _convert_and_box_cache đang bị lỗi
-        df["time_collected"] = pd.to_datetime(df["time_collected"].astype(str), errors='coerce', cache=False)
+        # 2. Đưa về List Python thuần túy (Thoát ly hoàn toàn khỏi bộ nhớ của Pandas/Arrow)
+        pure_list = [str(x).strip() for x in df["time_collected"].tolist()]
         
-        # Loại bỏ tiếp các dòng bị biến thành NaT nếu có
+        # 3. Ép kiểu ngược lại vào dataframe và TẮT cache
+        df["time_collected"] = pd.to_datetime(pure_list, errors='coerce', cache=False)
+        
+        # 4. Dọn sạch dòng lỗi NaT phát sinh
         df = df.dropna(subset=["time_collected"])
     else:
-        print("❌ Lỗi: File CSV không có cột 'time_collected'!")
+        print("❌ Lỗi: File không có cột 'time_collected'!")
         return pd.DataFrame()
         
     print(f"✅ Thành công! Đã tải {len(df)} dòng dữ liệu từ Drive.")
