@@ -192,14 +192,62 @@ def save_alert_config(mail, coin, breakout, breakdown):
 
 
 # --- LOAD DATA THỊ TRƯỜNG ---
-if "df" not in st.session_state:
+def load_market_data():
     with st.spinner("Đang tải dữ liệu từ Cloud..."):
-        st.session_state.df = load_market_data()
-else:
-    # Làm sạch lại để tránh session giữ DataFrame cũ/lỗi sau khi deploy code mới.
-    st.session_state.df = clean_market_df(st.session_state.df)
+        df_loaded = get_data()
+
+    if df_loaded is None:
+        return pd.DataFrame()
+
+    df_loaded = df_loaded.copy()
+    df_loaded.columns = df_loaded.columns.astype(str).str.strip()
+
+    required_cols = ["id", "time_collected", "current_price_usd", "market_cap"]
+    missing = [c for c in required_cols if c not in df_loaded.columns]
+
+    if missing:
+        st.error(f"File dữ liệu thiếu cột: {missing}")
+        st.write("Các cột hiện có:", list(df_loaded.columns))
+        return pd.DataFrame()
+
+    df_loaded["id"] = df_loaded["id"].astype(str).str.strip().str.lower()
+    df_loaded["time_collected"] = pd.to_datetime(df_loaded["time_collected"], errors="coerce")
+    df_loaded["current_price_usd"] = pd.to_numeric(df_loaded["current_price_usd"], errors="coerce")
+    df_loaded["market_cap"] = pd.to_numeric(df_loaded["market_cap"], errors="coerce")
+
+    if "price_change_24h" in df_loaded.columns:
+        df_loaded["price_change_24h"] = pd.to_numeric(df_loaded["price_change_24h"], errors="coerce")
+
+    if "total_volume" in df_loaded.columns:
+        df_loaded["total_volume"] = pd.to_numeric(df_loaded["total_volume"], errors="coerce")
+
+    df_loaded = df_loaded.dropna(subset=["id", "time_collected", "current_price_usd"])
+    df_loaded = df_loaded.sort_values(["id", "time_collected"]).reset_index(drop=True)
+
+    return df_loaded
+
+
+# Luôn cho phép reload nếu df cũ bị rỗng
+if (
+    "df" not in st.session_state
+    or st.session_state.df is None
+    or st.session_state.df.empty
+):
+    st.session_state.df = load_market_data()
 
 df = st.session_state.df
+
+# Nút ép tải lại dữ liệu
+if st.sidebar.button("🔄 Tải lại dữ liệu"):
+    st.session_state.df = load_market_data()
+    st.rerun()
+
+st.sidebar.write(f"📦 Data: {df.shape[0]:,} dòng")
+
+if df is None or df.empty:
+    st.sidebar.error("Chưa tải được dữ liệu hợp lệ")
+    st.error("Không có dữ liệu hợp lệ để hiển thị. Bấm 'Tải lại dữ liệu' hoặc kiểm tra log Streamlit.")
+    st.stop()
 if df is None or df.empty:
     st.sidebar.error("Chưa tải được dữ liệu hợp lệ")
     st.error("Không có dữ liệu hợp lệ để hiển thị. Hãy kiểm tra file Data/crypto_full_data.csv hoặc Google Drive.")
