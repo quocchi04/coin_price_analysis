@@ -76,20 +76,13 @@ def get_data():
         return pd.DataFrame()
 
     if "time_collected" in df.columns:
-        # 1. Xóa bỏ dòng trống
         df = df.dropna(subset=["time_collected"])
         
-        # 2. Đưa về List Python thuần túy 
-        pure_list = [str(x).strip() for x in df["time_collected"].tolist()]
+        # 🚀 ÉP THẲNG SANG MẢNG NUMPY: Vừa nhanh như chớp vừa xóa sạch dấu vết Arrow Bug
+        raw_numpy_array = df["time_collected"].astype(str).to_numpy()
+        df["time_collected"] = pd.to_datetime(raw_numpy_array, errors='coerce')
         
-       # Tuyệt chiêu cuối: Dịch từng dòng một, bỏ qua hoàn toàn cơ chế gộp nhóm của Pandas
-        df["time_collected"] = pd.Series(pure_list).apply(lambda x: pd.to_datetime(x, errors='coerce'))
-        
-        # 4. Dọn sạch dòng lỗi NaT phát sinh
         df = df.dropna(subset=["time_collected"])
-        
-        # ⭐ CHIÊU CUỐI DIỆT TẬN GỐC: Tẩy tủy DataFrame sang dạng thuần túy
-        # Biến DF thành Dict rồi dựng lại từ đầu để xóa sạch hoàn toàn dấu vết PyArrow khỏi hệ thống
         df = pd.DataFrame(df.to_dict(orient='list'))
         
     else:
