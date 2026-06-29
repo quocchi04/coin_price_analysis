@@ -9,25 +9,43 @@ st.set_page_config(page_title="Crypto Full Analytics", layout="wide")
 
 # --- ĐOẠN MỒI THÔNG MINH: TẠO service_account.json TỪ STREAMLIT SECRETS ---
 def bootstrap_service_account():
-    """Tạo file service_account.json tạm thời trên Streamlit Cloud nếu chưa có."""
-    if os.path.exists("service_account.json"):
+    """Tạo service_account.json và set DRIVE_FILE_ID cho Streamlit Cloud."""
+
+    # Link file Drive bạn gửi:
+    # https://drive.google.com/file/d/1v_EbHYMazXALKZD6dldtgkqVz-9WzWU5/view
+    default_file_id = "1v_EbHYMazXALKZD6dldtgkqVz-9WzWU5"
+
+    try:
+        if "DRIVE_FILE_ID" in st.secrets:
+            os.environ["DRIVE_FILE_ID"] = str(st.secrets["DRIVE_FILE_ID"])
+        else:
+            os.environ["DRIVE_FILE_ID"] = default_file_id
+    except Exception:
+        os.environ["DRIVE_FILE_ID"] = default_file_id
+
+    service_account_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "service_account.json")
+
+    if os.path.exists(service_account_path):
         return
 
     try:
         if "GCP_SERVICE_ACCOUNT" not in st.secrets:
-            return
+            st.error("❌ Thiếu GCP_SERVICE_ACCOUNT trong Streamlit Secrets.")
+            st.stop()
 
         secret_data = st.secrets["GCP_SERVICE_ACCOUNT"]
+
         if isinstance(secret_data, str):
             secret_dict = json.loads(secret_data)
         else:
             secret_dict = dict(secret_data)
 
-        with open("service_account.json", "w", encoding="utf-8") as f:
+        with open(service_account_path, "w", encoding="utf-8") as f:
             json.dump(secret_dict, f)
+
     except Exception as e:
-        # Không cho app chết ngay ở bước khởi tạo; lỗi thật sẽ được hiện ở lúc tải dữ liệu.
-        st.sidebar.warning(f"Không khởi tạo được service_account.json: {e}")
+        st.error(f"❌ Lỗi khởi tạo service_account.json từ Streamlit Secrets: {e}")
+        st.stop()
 
 
 bootstrap_service_account()
@@ -107,16 +125,6 @@ def clean_market_df(raw_df):
     df = df.sort_values(["id", "time_collected"], kind="mergesort").reset_index(drop=True)
 
     return df
-
-
-def load_market_data():
-    """Tải dữ liệu từ Drive và trả về DataFrame đã làm sạch."""
-    try:
-        raw_df = get_data()
-        return clean_market_df(raw_df)
-    except Exception as e:
-        st.error(f"Không tải được dữ liệu từ Drive: {e}")
-        return pd.DataFrame()
 
 
 def get_coin_options(df):
