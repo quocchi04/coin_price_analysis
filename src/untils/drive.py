@@ -72,36 +72,42 @@ def get_data():
     df = pd.read_csv(fh, engine='python', dtype={'time_collected': str})
     
     # ==== XỬ LÝ DỮ LIỆU TRIỆT ĐỂ (BYPASS TOÀN BỘ BUG PYARROW) ==== #
-    # ==== XỬ LÝ DỮ LIỆU TRIỆT ĐỂ (BYPASS TOÀN BỘ BUG PYARROW) ==== #
     if df is None or df.empty:
         return pd.DataFrame()
 
     if "time_collected" in df.columns:
-        df = df.dropna(subset=["time_collected"])
-        
-        # 👑 FIX TRIỆT ĐỂ: Tách riêng cột thành danh sách Python thuần
-        raw_list = df["time_collected"].astype(str).tolist()
-        
-        # Sử dụng thư viện datetime tiêu chuẩn của Python để ép kiểu (Tuyệt đối không dính dáng tới cache của Pandas)
+        import numpy as np
         from datetime import datetime
-        parsed_dates = []
-        for x in raw_list:
+        
+        # 1. Xử lý cột thời gian bằng Python thuần (Tuyệt đối không gọi pd.to_datetime ở đây)
+        raw_times = df["time_collected"].fillna("").astype(str).tolist()
+        clean_times = []
+        for t in raw_times:
+            if not t or t.lower() == 'nan' or t.strip() == '':
+                clean_times.append(np.datetime64('NaT'))
+                continue
             try:
-                # Thử định dạng chuẩn YYYY-MM-DD HH:MM:SS
-                parsed_dates.append(datetime.strptime(x.split('.')[0], "%Y-%m-%d %H:%M:%S"))
+                base_t = t.split('.')[0].replace('T', ' ')
+                clean_times.append(datetime.strptime(base_t, "%Y-%m-%d %H:%M:%S"))
             except Exception:
                 try:
-                    # Dự phòng định dạng ISO / Tự động nhận diện qua Pandas nhưng cô lập từng phần tử đơn lẻ
-                    parsed_dates.append(pd.to_datetime(x, errors='coerce'))
+                    clean_times.append(datetime.strptime(t.strip(), "%Y-%m-%d"))
                 except Exception:
-                    parsed_dates.append(pd.NaT)
-                    
-        # Chuyển đổi ngược lại thành List thuần túy để đưa vào cấu trúc Dict
-        df["time_collected"] = parsed_dates
-        df = df.dropna(subset=["time_collected"])
+                    clean_times.append(np.datetime64('NaT'))
         
-        # Đóng gói lại thành DataFrame mới tinh, sạch hoàn toàn khỏi PyArrow
-        df = pd.DataFrame(df.to_dict(orient='list'))
+        # 2. GIẢI PHÓNG TOÀN BỘ CỘT khỏi cấu trúc lỗi PyArrow Extension của Pandas
+        clean_dict = {}
+        for col in df.columns:
+            if col == "time_collected":
+                # Ép cứng về mảng datetime64 tiêu chuẩn của NumPy
+                clean_dict[col] = np.array(clean_times, dtype='datetime64[ns]')
+            else:
+                # Ép các cột khác (như cột 'id') về mảng NumPy nguyên thủy để không bị lỗi khi lọc ở app.py
+                clean_dict[col] = df[col].to_numpy()
+        
+        # 3. Dựng lại DataFrame mới tinh khiết, sạch bóng PyArrow
+        df = pd.DataFrame(clean_dict)
+        df = df.dropna(subset=["time_collected"])
         
     else:
         print("❌ Lỗi: File không có cột 'time_collected'!")
