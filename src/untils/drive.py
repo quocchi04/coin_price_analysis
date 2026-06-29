@@ -82,9 +82,8 @@ def get_data():
         # 2. Đưa về List Python thuần túy 
         pure_list = [str(x).strip() for x in df["time_collected"].tolist()]
         
-       # 3. Ép kiểu ngày tháng và ép cứng định dạng về NumPy thuần (datetime64[ns])
-        # Đuôi .astype('datetime64[ns]') chính là khắc tinh của lỗi checknull này!
-        df["time_collected"] = pd.to_datetime(pure_list, errors='coerce').astype('datetime64[ns]')
+       # Tuyệt chiêu cuối: Dịch từng dòng một, bỏ qua hoàn toàn cơ chế gộp nhóm của Pandas
+        df["time_collected"] = pd.Series(pure_list).apply(lambda x: pd.to_datetime(x, errors='coerce'))
         
         # 4. Dọn sạch dòng lỗi NaT phát sinh
         df = df.dropna(subset=["time_collected"])
