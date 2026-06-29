@@ -70,7 +70,7 @@ def get_data():
     fh.seek(0)
     df = pd.read_csv(fh)
     
-    # ==== 6. XỬ LÝ DỮ LIỆU AN TOÀN (ĐÃ SỬA CHỐNG SẬP APP) ==== #
+   # ==== 6. XỬ LÝ DỮ LIỆU AN TOÀN (BẢN VÁ LỖI PYARROW) ==== #
     # 1. Kiểm tra xem file tải về có dữ liệu không
     if df is None or df.empty:
         print("⚠️ Cảnh báo: File CSV tải về trống rỗng hoặc không có dữ liệu!")
@@ -78,13 +78,16 @@ def get_data():
 
     # 2. Xử lý ép kiểu thời gian an toàn
     if "time_collected" in df.columns:
-        # Loại bỏ các dòng trống ở cột thời gian trước khi chuyển đổi
+        # Loại bỏ các dòng trống ở cột thời gian trước
         df = df.dropna(subset=["time_collected"])
         
-        # Thêm errors='coerce' để nếu dòng nào bị lỗi định dạng, nó sẽ biến thành NaT chứ không làm sập App
-        df["time_collected"] = pd.to_datetime(df["time_collected"], errors='coerce')
+        # CHÌA KHÓA: Chuyển cột sang dạng mảng NumPy thô để bypass lỗi của PyArrow trên Cloud
+        raw_time_array = df["time_collected"].to_numpy()
         
-        # Loại bỏ tiếp các dòng bị biến thành NaT (nếu có) sau khi ép kiểu lỗi
+        # Ép kiểu trên mảng thô này sẽ an toàn 100%
+        df["time_collected"] = pd.to_datetime(raw_time_array, errors='coerce')
+        
+        # Loại bỏ tiếp các dòng bị biến thành NaT (nếu có)
         df = df.dropna(subset=["time_collected"])
     else:
         print("❌ Lỗi: File CSV không có cột 'time_collected'!")
