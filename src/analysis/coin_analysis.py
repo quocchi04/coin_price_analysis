@@ -34,24 +34,24 @@ def plot_market_analysis(df_latest, is_streamlit=False):
     fig, axes = plt.subplots(1, 2, figsize=(16, 8))
     
     time_str = df_latest["time_collected"].iloc[0] if not df_latest.empty else "N/A"
-    fig.suptitle(f'PHAN TICH THI TRUONG CRYPTO ({time_str})', fontsize=16, fontweight='bold')
+    fig.suptitle(f'PHÂN TÍCH THỊ TRƯỜNG CRYPTO ({time_str})', fontsize=16, fontweight='bold')
 
     # Biểu đồ 1: Tăng trưởng giá
     if not high_growth.empty:
         sns.barplot(ax=axes[0], x='price_change_24h', y='name', data=high_growth, palette='Greens_r')
-        axes[0].set_title('Top 10 Coin Tang Gia Manh Nhat (24h %)', fontsize=14)
-        axes[0].set_xlabel('% Thay doi')
+        axes[0].set_title('Top 10 Coin Tăng giá mạnh nhất (24h %)', fontsize=14)
+        axes[0].set_xlabel('% Thay đối')
     else:
-        axes[0].text(0.5, 0.5, 'Khong co du lieu tang gia', ha='center')
+        axes[0].text(0.5, 0.5, 'Không có dữ liệu tăng giá', ha='center')
 
     # Biểu đồ 2: Volume bất thường
     if not abnormal_vol.empty:
         sns.barplot(ax=axes[1], x='total_volume', y='name', data=abnormal_vol, palette='Oranges_r')
-        axes[1].set_title('Top 10 Coin co Volume Bat Thuong (USD)', fontsize=14)
+        axes[1].set_title('Top 10 Coin có Volume Bất Thường (USD)', fontsize=14)
         axes[1].set_xlabel('Volume (USD)')
         axes[1].xaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: format_volume(x)))
     else:
-        axes[1].text(0.5, 0.5, 'Khong co volume bat thuong', ha='center')
+        axes[1].text(0.5, 0.5, 'Không có volume bất thường', ha='center')
 
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
     

@@ -32,7 +32,7 @@ def calculate_correlation(df):
 def plot_heatmap(corr_matrix, is_streamlit=False):
     fig = plt.figure(figsize=(10, 8))
     sns.heatmap(corr_matrix, annot=True, cmap='RdYlGn', center=0, fmt=".2f")
-    plt.title('Ban do nhiet tuong quan giua cac dac trung Crypto', fontsize=15)
+    plt.title('Bản đồ nhiệt tương quan giữa các đặc trưng Crypto', fontsize=15)
     
     if is_streamlit:
         import streamlit as st
@@ -74,14 +74,14 @@ def show(df):
             - **-1.0**: Tương quan nghịch hoàn hảo.
             """)
     else:
-        st.error("Khong co du lieu de phan tich.")
+        st.error("Không có dữ liệu để phân tích.")
 
 # --- CHAY RIENG (TERMINAL) ---
 if __name__ == "__main__":
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
     if not os.path.exists(DATA_FILE):
-        print("Khong tim thay file du lieu!")
+        print("Không tìm thấy file dữ liệu!")
     else:
         df_raw = pd.read_csv(DATA_FILE)
         corr, analysis = calculate_correlation(df_raw)

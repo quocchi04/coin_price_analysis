@@ -59,8 +59,8 @@ def show(df):
     if df_supply is not None:
         # Hien thi thong ke nhanh
         col1, col2, col3 = st.columns(3)
-        col1.metric("Ty le cung TB", f"{df_supply['supply_ratio'].mean():.2%}")
-        col2.metric("So coin phan tich", len(df_supply))
+        col1.metric("Tỷ lệ cung trung bình", f"{df_supply['supply_ratio'].mean():.2%}")
+        col2.metric("Số coin phân tích", len(df_supply))
         col3.write(f"Snapshot: {latest_time}")
         
         # Ve bieu do
@@ -72,14 +72,14 @@ def show(df):
         top_low['supply_ratio'] = top_low['supply_ratio'].apply(lambda x: f"{x:.2%}")
         st.table(top_low)
     else:
-        st.error("Khong co du lieu cung cau hop le.")
+        st.error("Không có dữ liệu cung cầu hợp lệ.")
 
 # --- CHAY RIENG (TERMINAL) ---
 if __name__ == "__main__":
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
     
     if not os.path.exists(DATA_FILE):
-        print(f"Khong tim thay file: {DATA_FILE}")
+        print(f"Không tìm thấy file: {DATA_FILE}")
     else:
         df_all = pd.read_csv(DATA_FILE)
         latest_time = df_all['time_collected'].max()
@@ -87,5 +87,5 @@ if __name__ == "__main__":
         
         df_supply = process_supply_data(df_latest)
         if df_supply is not None:
-            print(f"\nTy le cung trung binh: {df_supply['supply_ratio'].mean():.2%}")
+            print(f"\nTỷ lệ cung trung bình: {df_supply['supply_ratio'].mean():.2%}")
             plot_supply_chart(df_supply, is_streamlit=False)

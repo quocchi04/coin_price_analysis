@@ -56,7 +56,7 @@ def show(df):
 
     st.subheader("Top 10 tăng giá từ lúc bắt đầu thu thập dữ liệu")
     if g_total["pct_change_total"].sum() == 0:
-        st.info("Du lieu moi thu thap 1 lan, chua co bien dong thoi gian.")
+        st.info("Dữ liệu mới thu thập 1 lần, chưa có biến động thời gian.")
     st.dataframe(g_total[["symbol", "name", "pct_change_total", "current_price_usd"]])
 
 # --- CHAY RIENG (TERMINAL) ---
@@ -75,7 +75,7 @@ if __name__ == "__main__":
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
     if not os.path.exists(DATA_FILE):
-        print(f"Khong tim thay file: {DATA_FILE}")
+        print(f"Không tìm thấy file: {DATA_FILE}")
     else:
         df_raw = pd.read_csv(DATA_FILE)
         g_24h, vol, g_total = rank_top_gainers_and_volume(df_raw)

@@ -66,10 +66,10 @@ def plot_kmeans_clusters(df_out, is_streamlit=False):
     )
 
     plt.yscale("log")
-    plt.xlabel("Bien dong gia 24h (%)", fontsize=12)
-    plt.ylabel("Von hoa thi truong (USD - Log scale)", fontsize=12)
-    plt.title("PHAN CUM THI TRUONG CRYPTO (K-MEANS)", fontsize=16, fontweight='bold')
-    plt.legend(title="Nhom Cum", bbox_to_anchor=(1.05, 1), loc='upper left')
+    plt.xlabel("Biến động giá 24h (%)", fontsize=12)
+    plt.ylabel("ốn hóa thị trường (USD - Log scale)", fontsize=12)
+    plt.title("PHÂN CỤM THỊ TRƯỜNG CRYPTO (K-MEANS)", fontsize=16, fontweight='bold')
+    plt.legend(title="Nhóm Cụm", bbox_to_anchor=(1.05, 1), loc='upper left')
     plt.tight_layout()
     
     if is_streamlit:
@@ -104,7 +104,7 @@ if __name__ == "__main__":
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
     if not os.path.exists(DATA_FILE):
-        print(f"Khong tim thay file: {DATA_FILE}")
+        print(f"Không tìm thấy file: {DATA_FILE}")
     else:
         df_raw = pd.read_csv(DATA_FILE)
         latest_time = df_raw["time_collected"].max()

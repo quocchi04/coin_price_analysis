@@ -57,14 +57,14 @@ def plot_dbscan_clusters(df_out, is_streamlit=False):
     if not noise_samples.empty:
         sns.scatterplot(
             data=noise_samples, x="price_change_24h", y="market_cap",
-            color="red", label="Di biet (Outliers)", marker="x", s=100, alpha=0.9
+            color="red", label="Dị biệt (Outliers)", marker="x", s=100, alpha=0.9
         )
 
     plt.yscale("log")
-    plt.xlabel("Bien dong gia 24h (%)")
-    plt.ylabel("Von hoa thi truong (USD - Log scale)")
-    plt.title("PHAN TICH DIEM DI BIET THI TRUONG (DBSCAN)", fontsize=16, fontweight='bold')
-    plt.legend(title="Phan loai", loc='upper right')
+    plt.xlabel("Biến động giá 24h (%)")
+    plt.ylabel("Vốn hóa thị trường (USD - Log scale)")
+    plt.title("PHÂN TÍCH ĐIỂM DỊ BIỆT THỊ TRƯỜNG (DBSCAN)", fontsize=16, fontweight='bold')
+    plt.legend(title="Phân loại", loc='upper right')
     
     # Neu la Streamlit thi dung st.pyplot, neu chay rieng thi plt.show
     if is_streamlit:
@@ -105,5 +105,5 @@ if __name__ == "__main__":
         df_latest = df_raw[df_raw["time_collected"] == latest_time].copy()
         
         df_clustered = perform_dbscan_clustering(df_latest, eps=0.5, min_samples=3)
-        print("DBSCAN hoan tat.")
+        print("DBSCAN hoàn tất.")
         plot_dbscan_clusters(df_clustered, is_streamlit=False)

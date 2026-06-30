@@ -70,12 +70,12 @@ def find_similar_patterns(df, coin_id, window_size=3, k=3):
 def plot_pattern_comparison(coin_id, matches, current_segment, is_streamlit=False):
     fig = plt.figure(figsize=(12, 6))
     # Ve doan hien tai
-    plt.plot(current_segment[:, 0], label="Hien tai (Gia)", color='black', linewidth=4)
+    plt.plot(current_segment[:, 0], label="Hiện tại (Gia)", color='black', linewidth=4)
     
     # Ve cac doan qua khu tuong dong de so sanh
     for i, m in enumerate(matches):
         plt.plot(m['past_segment'][:, 0], linestyle='--', 
-                 label=f"Mau {i+1} (DTW={m['distance']:.2f}, Sau do: {m['future_direction']})")
+                 label=f"Mẫu {i+1} (DTW={m['distance']:.2f}, Sau so sánh: {m['future_direction']})")
 
     plt.title(f"Phân tích hình thái giá (DTW Matching): {coin_id}", fontsize=14, fontweight='bold')
     plt.xlabel("Buộc thời gian")
@@ -105,12 +105,12 @@ def show(df):
     coins = df['id'].unique()
     selected_coin = st.selectbox("Chọn Coin để phân tích hình thái:", coins)
     
-    w_size = st.slider("Đ dài của mẫu (Window Size):", 3, 10, 3)
+    w_size = st.slider("Độ dài của mẫu (Window Size):", 3, 10, 3)
     
     results, current_seg = find_similar_patterns(df, selected_coin, window_size=w_size)
     
     if results and current_seg is not None:
-        st.info(f"Tìm thay {len(results)} đoạn trong quá khứ có hình thái giá giống với hiện tại.")
+        st.info(f"Tìm thấy {len(results)} đoạn trong quá khứ có hình thái giá giống với hiện tại.")
         
         # Ve bieu do so sanh
         plot_pattern_analysis = plot_pattern_comparison(selected_coin, results, current_seg, is_streamlit=True)
@@ -121,7 +121,7 @@ def show(df):
         res_df["future_return"] = res_df["future_return"].apply(lambda x: f"{x:.2%}")
         st.table(res_df)
     else:
-        st.warning(f"Khong du du lieu de so sanh mau hinh cho {selected_coin}. Can it nhat {w_size*2} dong du lieu.")
+        st.warning(f"Không đủ dữ liệu để so sánh mẫu hình cho {selected_coin}. ần ít nhất {w_size*2} dòng dữ liệu.")
 
 # --- CHAY RIENG (TERMINAL) ---
 if __name__ == "__main__":
@@ -131,4 +131,4 @@ if __name__ == "__main__":
         if res:
             plot_pattern_comparison("bitcoin", res, seg, is_streamlit=False)
         else:
-            print("Khong du du lieu mau.")
+            print("Không đủ dữ liệu mẫu.")
