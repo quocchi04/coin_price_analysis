@@ -35,9 +35,9 @@ def plot_supply_chart(df_supply, is_streamlit=False):
     fig = plt.figure(figsize=(10, 6))
     plt.hist(df_supply['supply_ratio'], bins=20, color='#3498db', edgecolor='white', alpha=0.8)
     
-    plt.title('PHAN PHOI TY LE CUNG LUU HANH (CIRCULATING / TOTAL)', fontsize=14, fontweight='bold')
-    plt.xlabel('Ty le (0.0: Moi phat hanh - 1.0: Da xa het)', fontsize=12)
-    plt.ylabel('So luong dong coin', fontsize=12)
+    plt.title('PHÂN PHỐI TY LỆ CUNG LƯU HÀNH (CIRCULATING / TOTAL)', fontsize=14, fontweight='bold')
+    plt.xlabel('Ty le (0.0: Mới phát hành - 1.0: Da xa het)', fontsize=12)
+    plt.ylabel('Số lượng dòng coin', fontsize=12)
     plt.grid(axis='y', linestyle='--', alpha=0.7)
     
     if is_streamlit:
