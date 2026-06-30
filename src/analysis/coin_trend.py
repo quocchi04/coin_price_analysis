@@ -36,7 +36,7 @@ def plot_supply_chart(df_supply, is_streamlit=False):
     plt.hist(df_supply['supply_ratio'], bins=20, color='#3498db', edgecolor='white', alpha=0.8)
     
     plt.title('PHÂN PHỐI TY LỆ CUNG LƯU HÀNH (CIRCULATING / TOTAL)', fontsize=14, fontweight='bold')
-    plt.xlabel('Ty le (0.0: Mới phát hành - 1.0: Da xa het)', fontsize=12)
+    plt.xlabel('Tỷ lệ (0.0: Mới phát hành - 1.0: Đã xả hết)', fontsize=12)
     plt.ylabel('Số lượng dòng coin', fontsize=12)
     plt.grid(axis='y', linestyle='--', alpha=0.7)
     
