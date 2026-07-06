@@ -2,12 +2,16 @@ name: Crypto_Auto_Alert
 
 on:
   schedule:
-    - cron: '0 * * * *' # Tự động chạy mỗi tiếng (phút thứ 0)
+    - cron: '0 * * * *' # Tự động chạy mỗi tiếng
   workflow_dispatch: # Nút bấm chạy tay trên web GitHub
+
+permissions:
+  contents: write
 
 jobs:
   run-alert:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -21,34 +25,49 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+
       - name: Create Service Account Key File
         run: |
           cat <<EOF > service_account.json
           ${{ secrets.GCP_SERVICE_ACCOUNT }}
           EOF
+
       # --- BƯỚC 1: LẤY DỮ LIỆU MỚI ---
       - name: Collect New Crypto Data
         run: |
           export PYTHONPATH=${{ github.workspace }}
           python src/data/collect_data.py
 
-      # --- BƯỚC 2: ĐỒNG BỘ LÊN GOOGLE DRIVE (Để có dữ liệu dự đoán) ---
+      # --- BƯỚC 2: ĐỒNG BỘ LÊN GOOGLE DRIVE ---
       - name: Sync Data to Google Drive
         env:
           DRIVE_FOLDER_ID: ${{ secrets.DRIVE_FOLDER_ID }}
-          # Thêm các secret cần thiết nếu file upload có dùng
           GCP_SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
         run: |
           export PYTHONPATH=${{ github.workspace }}
           python src/untils/upload_to_drive.py
+
+      # --- BƯỚC 3: HUẤN LUYỆN LẠI MÔ HÌNH XU HƯỚNG ---
+      - name: Train Market Trend Model
+        run: |
+          export PYTHONPATH=${{ github.workspace }}
+          python src/Prediction/price_trend_prediction.py
+
+      # --- BƯỚC 4: ĐẨY KẾT QUẢ ML_RESULTS.JSON LÊN GITHUB ---
+      - name: Commit Updated ML Results
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add Data/ml_results.json
+          git commit -m "update ml results" || echo "No changes to commit"
+          git push
+
+      # --- BƯỚC 5: CHẠY HỆ THỐNG CẢNH BÁO ---
       - name: Run Alert System
         env:
           GCP_SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
           EMAIL_USER: ${{ secrets.EMAIL_USER }}
           EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
           RECEIVER_EMAIL: ${{ secrets.RECEIVER_EMAIL }}
-          # Ép GitHub đọc secret đã cài ở bước trước
-          # GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
-          # GCP_SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
-          PYTHONPATH: ${{ github.workspace }} # Giúp Python hiểu cấu trúc thư mục src
+          PYTHONPATH: ${{ github.workspace }}
         run: python src/alert/crypto_alert.py
