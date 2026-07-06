@@ -2,7 +2,7 @@ name: Crypto_Auto_Alert
 
 on:
   schedule:
-    - cron: '0 * * * *' # Tự động chạy mỗi tiếng
+    - cron: '17 * * * *' # Tự động chạy mỗi tiếng
   workflow_dispatch: # Nút bấm chạy tay trên web GitHub
 
 permissions:
