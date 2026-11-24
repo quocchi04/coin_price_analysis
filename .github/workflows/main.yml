@@ -5,6 +5,7 @@ on:
 
 permissions:
   contents: write
+  id-token: write
 
 jobs:
   run-alert:
@@ -32,9 +33,16 @@ jobs:
 
       # --- BƯỚC 1: LẤY DỮ LIỆU MỚI ---
       - name: Collect New Crypto Data
+        env:
+          TZ: UTC
         run: |
-          export PYTHONPATH=${{ github.workspace }}
+          export PYTHONPATH="${{ github.workspace }}"
           python src/data/collect_data.py
+
+      - name: Save new snapshot for S3
+        id: stage_s3_snapshot
+        continue-on-error: true
+        run: cp Data/crypto_full_data.csv "$RUNNER_TEMP/coin_snapshot.csv"
 
       # --- BƯỚC 2: ĐỒNG BỘ LÊN GOOGLE DRIVE ---
       - name: Sync Data to Google Drive
@@ -69,3 +77,30 @@ jobs:
           RECEIVER_EMAIL: ${{ secrets.RECEIVER_EMAIL }}
           PYTHONPATH: ${{ github.workspace }}
         run: python src/alert/crypto_alert.py
+
+      - name: Configure AWS credentials
+        id: aws_s3_auth
+        if: ${{ !cancelled() && steps.stage_s3_snapshot.outcome == 'success' }}
+        uses: aws-actions/configure-aws-credentials@v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Upload new snapshot to S3
+        if: ${{ !cancelled() && steps.aws_s3_auth.outcome == 'success' }}
+        env:
+          S3_BUCKET: ${{ vars.S3_BUCKET }}
+          S3_PREFIX: ${{ vars.S3_PREFIX }}
+        run: |
+          : "${S3_BUCKET:?Missing S3_BUCKET}"
+          : "${S3_PREFIX:?Missing S3_PREFIX}"
+
+          python src/untils/export_s3_snapshots.py \
+            "$RUNNER_TEMP/coin_snapshot.csv" \
+            "$RUNNER_TEMP/s3_export" \
+            --source-tz UTC \
+            --single-snapshot
+
+          aws s3 cp "$RUNNER_TEMP/s3_export/" \
+            "s3://${S3_BUCKET}/${S3_PREFIX%/}/" \
+            --recursive
